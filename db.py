@@ -6,9 +6,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def init_db():
     """
-    Create the database and tables if they don't exist, and populate 
+    Create the database and tables if they don't exist, and populate
     the friends table from a CSV file.
     """
     logger.debug("Initializing the database...")
@@ -42,10 +43,35 @@ def init_db():
             received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id INTEGER REFERENCES messages(id),
+            file_path TEXT NOT NULL,
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS events (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              friend_id INTEGER REFERENCES friends(id),
+              date DATE NOT NULL,
+              description TEXT NOT NULL
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS start_date (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date DATE NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 
-def insert_message(email, subject, body_plain, body_html):
+
+def insert_message(email, subject, body_plain, body_html, attachment_paths):
     """
     Insert a new message into the database.
     """
@@ -63,21 +89,64 @@ def insert_message(email, subject, body_plain, body_html):
         "INSERT INTO messages (friend_id, subject, body_plain, body_html) VALUES (?, ?, ?, ?)",
         (friend_id, subject, body_plain, body_html),
     )
+
+    message_id = cur.lastrowid
+    for path in attachment_paths:
+        cur.execute(
+            "INSERT INTO attachments (message_id, file_path) VALUES (?, ?)",
+            (message_id, path),
+        )
     conn.commit()
     conn.close()
 
 
-def get_all_messages_for_fortnight(datetime):
+def get_all_messages_for_delta(datetime, delta_days):
     """
-    Retrieve all messages received between the given date and two weeks before it.
+    Retrieve all messages received between the given date and given date minus delta_days.
     """
 
     conn = sqlite3.connect("friendslist.db")
     cur = conn.cursor()
-    cur.execute("""
-        SELECT f.name, f.email, m.subject, m.body_plain, m.body_html, m.received_at
+    cur.execute(
+        """
+        SELECT f.name, f.email, a.file_path, e.date, e.description, m.subject, m.body_plain, m.body_html, m.received_at
         FROM messages m
         JOIN friends f ON m.friend_id = f.id
+        JOIN attachments a ON m.id = a.message_id
+        JOIN events e ON f.id = e.friend_id
         WHERE m.received_at BETWEEN ? AND ?
         ORDER BY m.received_at DESC
-    """, (datetime - timedelta(days=14), datetime))
+    """,
+        (datetime - timedelta(days=delta_days), datetime),
+    )
+
+    messages = cur.fetchall()
+    conn.close()
+    return messages
+
+
+def get_start_date():
+    """
+    Retrieve the start date from the database.
+    """
+    conn = sqlite3.connect("friendslist.db")
+    cur = conn.cursor()
+    cur.execute("SELECT date FROM start_date ORDER BY id DESC LIMIT 1")
+    row = cur.fetchone()
+    conn.close()
+    if row:
+        return row[0]
+    else:
+        return None
+
+
+def update_start_date(new_date):
+    """
+    Update the start date in the database.
+    """
+    conn = sqlite3.connect("friendslist.db")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM start_date")  # Clear existing start date
+    cur.execute("INSERT INTO start_date (date) VALUES (?)", (new_date,))
+    conn.commit()
+    conn.close()
