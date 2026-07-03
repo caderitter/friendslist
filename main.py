@@ -1,4 +1,5 @@
 import logging
+import sqlite3
 
 from imapclient.imapclient import IMAPClient
 from auth_helpers import get_credentials
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 IMAP_SERVER = config["email"]["imap_server"]
 EMAIL_ADDRESS = config["email"]["address"]
 DELTA_DAYS = config["server"]["delta_days"]
+DB_PATH = config["server"]["db_path"]
 
 
 def handle_new_message(raw_email_bytes):
@@ -30,17 +32,30 @@ def handle_new_message(raw_email_bytes):
     logger.info("Attachments: %s", attachment_paths)
 
     try:
-        insert_message(from_address, subject, body_plain, body_html, attachment_paths)
-        logger.info("Message inserted into the database successfully.")
+        with sqlite3.connect(DB_PATH) as conn:
+            insert_message(
+                conn, from_address, subject, body_plain, body_html, attachment_paths
+            )
+            logger.info("Message inserted into the database successfully.")
     except ValueError as e:
         logger.error("Error inserting message: %s", e)
 
 
+def handle_time_delta_elapsed(start_date):
+    logger.info("%d days have passed since the start date", DELTA_DAYS)
+    with sqlite3.connect(DB_PATH) as conn:
+        events = get_events()
+        all_messages = get_all_messages_for_delta(conn, start_date.date, DELTA_DAYS)
+        # TODO send email to friends with the messages from the last two weeks
+        start_date.advance_date(conn)
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
-    init_db()
-    start_date = StartDate(config["server"]["delta_days"])
-    
+    with sqlite3.connect(DB_PATH) as conn:
+        init_db(conn)
+        start_date = StartDate(conn, DELTA_DAYS)
+
     creds = get_credentials()
 
     with IMAPClient(IMAP_SERVER, use_uid=True, ssl=True) as server:
@@ -59,11 +74,7 @@ def main():
                     handle_new_message(message_data[b"RFC822"])
                 server.idle()
             if start_date.delta_has_elapsed():
-                logger.info("Two weeks have passed since the start date")
-                events = get_events()
-                all_messages = get_all_messages_for_delta(start_date.date, DELTA_DAYS)
-                start_date.advance_date()
-                # TODO send email to friends with the messages from the last two weeks
+                handle_time_delta_elapsed(start_date)
 
 
 if __name__ == "__main__":

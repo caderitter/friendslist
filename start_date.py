@@ -1,6 +1,10 @@
 import datetime
+import sqlite3
 
 from db import get_start_date, update_start_date
+from config import config
+
+DB_PATH = config["server"]["db_path"]
 
 
 class StartDate:
@@ -10,13 +14,13 @@ class StartDate:
     Assumes a start date is seeded in the database.
     """
 
-    def __init__(self, delta_days):
-        self.date = get_start_date()
+    def __init__(self, conn, delta_days):
+        self.date = get_start_date(conn)
         self.delta_days = delta_days
 
-    def advance_date(self):
+    def advance_date(self, conn):
         self.date += datetime.timedelta(days=self.delta_days)
-        update_start_date(self.date)
+        update_start_date(conn, self.date)
 
     def target_date(self):
         return self.date + datetime.timedelta(days=self.delta_days)

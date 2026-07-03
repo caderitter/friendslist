@@ -1,19 +1,21 @@
 from datetime import timedelta
-import sqlite3
 import csv
 import logging
 
+from config import config
+
 
 logger = logging.getLogger(__name__)
+FRIENDS_CSV_PATH = config["server"]["friends_csv_path"]
 
 
-def init_db():
+def init_db(conn):
     """
     Create the database and tables if they don't exist, and populate
     the friends table from a CSV file.
     """
     logger.debug("Initializing the database...")
-    conn = sqlite3.connect("friendslist.db")
+
     cur = conn.cursor()
     cur.execute("PRAGMA foreign_keys = ON")
     cur.execute("""
@@ -23,8 +25,8 @@ def init_db():
             email TEXT NOT NULL UNIQUE
         )
     """)
-    logger.debug("Populating the friends table from friends.csv...")
-    with open("friends.csv", "r", encoding="utf-8") as file:
+    logger.debug("Populating the friends table from friends csv...")
+    with open(FRIENDS_CSV_PATH, "r", encoding="utf-8") as file:
         csv_reader = csv.reader(file)
         next(csv_reader)  # Skip the header row
 
@@ -54,10 +56,10 @@ def init_db():
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS events (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              friend_id INTEGER REFERENCES friends(id),
-              date DATE NOT NULL,
-              description TEXT NOT NULL
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            friend_id INTEGER REFERENCES friends(id),
+            date DATE NOT NULL,
+            description TEXT NOT NULL
         )
     """)
 
@@ -68,20 +70,17 @@ def init_db():
         )
     """)
     conn.commit()
-    conn.close()
 
 
-def insert_message(email, subject, body_plain, body_html, attachment_paths):
+def insert_message(conn, email, subject, body_plain, body_html, attachment_paths):
     """
     Insert a new message into the database.
     """
     logger.debug("Inserting a new message into the database.")
-    conn = sqlite3.connect("friendslist.db")
     cur = conn.cursor()
     cur.execute("SELECT id FROM friends WHERE email = ?", (email,))
     friend_row = cur.fetchone()
     if not friend_row:
-        conn.close()
         raise ValueError(f"No friend found with email: {email}")
 
     friend_id = friend_row[0]
@@ -97,15 +96,12 @@ def insert_message(email, subject, body_plain, body_html, attachment_paths):
             (message_id, path),
         )
     conn.commit()
-    conn.close()
 
 
-def get_all_messages_for_delta(datetime, delta_days):
+def get_all_messages_for_delta(conn, datetime, delta_days):
     """
     Retrieve all messages received between the given date and given date minus delta_days.
     """
-
-    conn = sqlite3.connect("friendslist.db")
     cur = conn.cursor()
     cur.execute(
         """
@@ -121,32 +117,27 @@ def get_all_messages_for_delta(datetime, delta_days):
     )
 
     messages = cur.fetchall()
-    conn.close()
     return messages
 
 
-def get_start_date():
+def get_start_date(conn):
     """
     Retrieve the start date from the database.
     """
-    conn = sqlite3.connect("friendslist.db")
     cur = conn.cursor()
     cur.execute("SELECT date FROM start_date ORDER BY id DESC LIMIT 1")
     row = cur.fetchone()
-    conn.close()
     if row:
         return row[0]
     else:
         return None
 
 
-def update_start_date(new_date):
+def update_start_date(conn, new_date):
     """
     Update the start date in the database.
     """
-    conn = sqlite3.connect("friendslist.db")
     cur = conn.cursor()
     cur.execute("DELETE FROM start_date")  # Clear existing start date
     cur.execute("INSERT INTO start_date (date) VALUES (?)", (new_date,))
     conn.commit()
-    conn.close()
