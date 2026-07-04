@@ -30,7 +30,15 @@ def get_events():
             )
             .execute()
         )
-        return events_result.get("items", [])
+        return [
+            {
+                "title": item["summary"],
+                "creator": item["creator"]["email"],
+                "start_date": item["start"]["date"],
+                "end_date": item["end"]["date"],
+            }
+            for item in events_result.get("items", [])
+        ]
     except HttpError as error:
         logger.error("An error occurred: %s", error)
         return []

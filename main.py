@@ -66,15 +66,18 @@ def main():
         logger.info("Listening for new emails...")
 
         while True:
-            responses = server.idle_check(timeout=30)
-            if responses:
-                server.idle_done()
-                messages = server.search(["UNSEEN"])
-                for message_data in server.fetch(messages, ["RFC822"]).values():
-                    handle_new_message(message_data[b"RFC822"])
-                server.idle()
-            if start_date.delta_has_elapsed():
-                handle_time_delta_elapsed(start_date)
+            try:
+                responses = server.idle_check(timeout=30)
+                if responses:
+                    server.idle_done()
+                    messages = server.search(["UNSEEN"])
+                    for message_data in server.fetch(messages, ["RFC822"]).values():
+                        handle_new_message(message_data[b"RFC822"])
+                    server.idle()
+                if start_date.delta_has_elapsed():
+                    handle_time_delta_elapsed(start_date)
+            except Exception as e:
+                logger.error("Error: %s", e)
 
 
 if __name__ == "__main__":

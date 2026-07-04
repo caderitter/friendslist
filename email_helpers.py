@@ -20,6 +20,7 @@ SMTP_SERVER = config["email"]["smtp_server"]
 
 
 def extract_attachment(part, content_type, content_disposition):
+    logger.debug("Extracting attachment...")
     is_attachment = (
         "attachment" in content_disposition or "inline" in content_disposition
     )
@@ -46,6 +47,7 @@ def extract_attachment(part, content_type, content_disposition):
 
 
 def parse_message_and_save_attachments(raw_email_bytes):
+    logger.debug("Parsing email...")
     msg = email.message_from_bytes(raw_email_bytes)
 
     subject = str(make_header(decode_header(msg["Subject"] or "")))

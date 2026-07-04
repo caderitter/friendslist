@@ -12,6 +12,7 @@ def get_db_connection(db_name):
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db(conn, friends_csv_path):
     """
     Create the database and tables if they don't exist, and populate

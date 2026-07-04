@@ -33,16 +33,18 @@ def test_insert_message(db_connection):
     assert result[4] == "<div>Test message</div>"
     assert result[5] == "attachment.png"
 
+
 def test_insert_message_with_stranger_email_raises(db_connection):
     with pytest.raises(ValueError, match="No friend found with email: eve@gmail.com"):
-      insert_message(
-          db_connection,
-          "eve@gmail.com",
-          "Test subject",
-          "Test message",
-          "<div>Test message</div>",
-          ["attachment.png"],
-      )
+        insert_message(
+            db_connection,
+            "eve@gmail.com",
+            "Test subject",
+            "Test message",
+            "<div>Test message</div>",
+            ["attachment.png"],
+        )
+
 
 def test_get_all_messages_for_delta(db_connection):
     cursor = db_connection.cursor()
@@ -54,10 +56,14 @@ def test_get_all_messages_for_delta(db_connection):
 
     cursor.execute(
         "INSERT INTO messages (friend_id, subject, body_plain, received_at) VALUES (?, ?, ?, ?)",
-        (1, "Test subject - too long ago", "Test message - too long ago", datetime.date(2026, 1, 1)),
+        (
+            1,
+            "Test subject - too long ago",
+            "Test message - too long ago",
+            datetime.date(2026, 1, 1),
+        ),
     )
 
-    # 4 day time delta
     messages = get_all_messages_for_delta(db_connection, datetime.date(2026, 1, 7), 5)
 
     assert len(messages) == 1
