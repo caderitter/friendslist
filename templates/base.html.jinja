@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Glizzy Friendsletter: {{ date.strftime('%Y-%m-%d') }}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f5f7;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+      margin: 0;
+      padding: 10px;
+      background-color: #f2f4f6;
+      color: #000000;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <h1 style="text-align: center">Glizzy Friendsletter: {{ date.strftime('%Y-%m-%d') }}</h1>
+    {% include "messages.html.jinja" %}
+  </div>
+</body>
+
+</html>

@@ -1,5 +1,6 @@
 from datetime import timedelta
 import csv
+import json
 import logging
 import sqlite3
 
@@ -8,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_db_connection(db_name):
-    conn = sqlite3.connect(db_name)
+    conn = sqlite3.connect(db_name, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -100,17 +101,33 @@ def get_all_messages_for_delta(conn, datetime, delta_days):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT f.name, f.email, a.file_path, m.subject, m.body_plain, m.body_html, m.received_at
+        SELECT 
+            f.name, 
+            f.email, 
+            json_group_array(
+                json_object('file_path', a.file_path, 'id', a.id)
+            ) AS as attachments, 
+            m.subject, 
+            m.body_plain, 
+            m.body_html, 
+            m.received_at
         FROM messages m
         JOIN friends f ON m.friend_id = f.id
         LEFT JOIN attachments a ON m.id = a.message_id
         WHERE m.received_at BETWEEN ? AND ?
         ORDER BY m.received_at DESC
+        GROUP BY m.id
     """,
         (datetime - timedelta(days=delta_days), datetime),
     )
 
     messages = cur.fetchall()
+    # convert the json_group_array string into an array of { file_path: 'path', id: 'id' }
+    for message in messages:
+        attachments = message.get("attachments")
+        message["attachments"] = [
+            a for a in json.loads(attachments) if a["id"] is not None
+        ]
     return messages
 
 
@@ -135,3 +152,10 @@ def update_start_date(conn, new_date):
     cur.execute("DELETE FROM start_date")  # Clear existing start date
     cur.execute("INSERT INTO start_date (date) VALUES (?)", (new_date,))
     conn.commit()
+
+
+def get_all_addresses(conn):
+    cur = conn.cursor()
+    cur.execute("SELECT email FROM friends")
+    rows = cur.fetchall()
+    return [row["email"] for row in rows]

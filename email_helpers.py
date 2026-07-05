@@ -8,6 +8,7 @@ from email.header import decode_header, make_header
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import parseaddr
 
 from PIL import Image
 
@@ -41,7 +42,8 @@ def extract_attachment(part, content_type, content_disposition):
     if payload is None:
         return None
     img = Image.open(io.BytesIO(payload))
-    img.save(filepath, format="JPEG", quality=60)
+    rgb_img = img.convert("RGB")
+    rgb_img.save(filepath, format="JPEG", quality=60)
     logger.info("Saved attachment: %s", filepath)
     return filepath
 
@@ -50,8 +52,9 @@ def parse_message_and_save_attachments(raw_email_bytes):
     logger.debug("Parsing email...")
     msg = email.message_from_bytes(raw_email_bytes)
 
-    subject = str(make_header(decode_header(msg["Subject"] or "")))
-    from_ = str(make_header(decode_header(msg["From"] or "")))
+    subject = msg["Subject"]
+    raw_from = msg["From"]
+    _, sender_address = parseaddr(raw_from)
 
     body_plain = ""
     body_html = ""
@@ -76,14 +79,14 @@ def parse_message_and_save_attachments(raw_email_bytes):
 
     return {
         "subject": subject,
-        "from": from_,
+        "from": sender_address,
         "body_plain": body_plain,
         "body_html": body_html,
         "attachments": saved_paths,
     }
 
 
-def send_email(to_addresses, subject, body_html, image_paths=None):
+def send_email(to_addresses, subject, body_html, attachments=None):
     creds = get_credentials()
     msg = MIMEMultipart("mixed")
     msg["From"] = EMAIL_ADDRESS
@@ -94,11 +97,11 @@ def send_email(to_addresses, subject, body_html, image_paths=None):
 
     msg.attach(html)
 
-    for index, path in enumerate(image_paths or []):
+    for image_id, path in (attachments or []):
         with open(path, "rb") as f:
             img_data = f.read()
             img = MIMEImage(img_data)
-            img.add_header("Content-ID", f"<image{index}>")
+            img.add_header("Content-ID", f"<{image_id}>")
             img.add_header(
                 "Content-Disposition", "inline", filename=os.path.basename(path)
             )

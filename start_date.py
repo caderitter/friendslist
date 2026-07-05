@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 
 from db import get_start_date, update_start_date
+
 
 class StartDate:
     """
@@ -21,4 +22,4 @@ class StartDate:
         return self.date + timedelta(days=self.delta_days)
 
     def delta_has_elapsed(self):
-        return date.today() >= self.target_date()
+        return datetime.today() >= self.target_date()

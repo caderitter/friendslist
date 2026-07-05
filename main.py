@@ -1,11 +1,19 @@
+from datetime import datetime
 import logging
 
 from imapclient.imapclient import IMAPClient
 from auth_helpers import get_credentials
 from calendar_helpers import get_events
 from config import config
-from email_helpers import parse_message_and_save_attachments
-from db import get_all_messages_for_delta, get_db_connection, init_db, insert_message
+from email_helpers import parse_message_and_save_attachments, send_email
+from db import (
+    get_all_addresses,
+    get_all_messages_for_delta,
+    get_db_connection,
+    init_db,
+    insert_message,
+)
+from html_helpers import render_email_body
 from start_date import StartDate
 
 logger = logging.getLogger(__name__)
@@ -45,8 +53,17 @@ def handle_time_delta_elapsed(start_date):
     logger.info("%d days have passed since the start date", DELTA_DAYS)
     with get_db_connection(DB_PATH) as conn:
         events = get_events()
-        all_messages = get_all_messages_for_delta(conn, start_date.date, DELTA_DAYS)
-        # TODO send email to friends with the messages from the last two weeks
+        messages = get_all_messages_for_delta(conn, start_date.date, DELTA_DAYS)
+        # create array of tuples of (file id, file path) from all the messages
+        attachments = [
+            (attachment["id"], attachment["file_path"])
+            for message in messages
+            for attachment in message.attachments
+        ]
+        addresses = get_all_addresses(conn)
+
+        main_html = render_email_body(date=datetime.today(), messages=messages)
+        send_email(addresses, "Subject", main_html, attachments)
         start_date.advance_date(conn)
 
 
