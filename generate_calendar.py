@@ -101,7 +101,7 @@ def build_two_week_calendar(start_sunday: date, events: list[dict]) -> str:
         weeks_html += f"<tr>{row}</tr>"
 
     end_date = days[-1]
-    title_range = f"{start_sunday.strftime('%b %d')} – {end_date.strftime('%b %d, %Y')}"
+    title_range = f"Glizzy Calendar: {start_sunday.strftime('%b %d')} – {end_date.strftime('%b %d')}"
 
     html = f"""
         <div class="calendar-wrapper">

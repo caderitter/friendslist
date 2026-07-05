@@ -12,7 +12,6 @@
       text-align: center;
       margin: 0;
       padding: 10px;
-      background-color: #f2f4f6;
       color: #000000;
     }
 
@@ -23,6 +22,7 @@
       border-radius: 12px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
       overflow: hidden;
+      border: 1px solid #eaeaea;
     }
 
     .calendar-title {
@@ -113,6 +113,7 @@
   <div>
     <h1 style="text-align: center">Glizzy Friendsletter: {{ date.strftime('%B %e') }}</h1>
     {{ calendar_html | safe }}
+    <a href="{{ calendar_url }}"><i>Don't forget to update the calendar!</i></a>
     {% include "messages.html.jinja" %}
   </div>
 </body>

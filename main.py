@@ -68,7 +68,7 @@ def handle_time_delta_elapsed(start_date: StartDate):
         calendar_html = build_two_week_calendar(start_date.date.date(), events)
         today = datetime.today()
         main_html = render_email_body(today, messages, calendar_html)
-        subject = f"Glizzy Friendsletter: {today.strftime('%Y-%m-%d')}"
+        subject = f"Glizzy Friendsletter: {today.strftime('%B %e')}"
         send_email(list(addresses_dict.keys()), subject, main_html, attachments)
         start_date.advance_date(conn)
 
