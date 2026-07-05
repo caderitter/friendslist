@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -51,7 +51,7 @@ def test_get_all_messages_for_delta(db_connection):
 
     cursor.execute(
         "INSERT INTO messages (friend_id, subject, body_plain, received_at) VALUES (?, ?, ?, ?)",
-        (1, "Test subject", "Test message", datetime.date(2026, 1, 4)),
+        (1, "Test subject", "Test message", datetime(2026, 1, 4)),
     )
 
     cursor.execute(
@@ -60,12 +60,46 @@ def test_get_all_messages_for_delta(db_connection):
             1,
             "Test subject - too long ago",
             "Test message - too long ago",
-            datetime.date(2026, 1, 1),
+            datetime(2026, 1, 1),
         ),
     )
 
-    messages = get_all_messages_for_delta(db_connection, datetime.date(2026, 1, 7), 5)
+    messages = get_all_messages_for_delta(db_connection, datetime(2026, 1, 7), 5)
 
     assert len(messages) == 1
     assert messages[0]["subject"] == "Test subject"
     assert messages[0]["body_plain"] == "Test message"
+
+def test_get_all_messages_with_attachments(db_connection):
+    insert_message(
+        db_connection,
+        "alice@gmail.com",
+        "Test subject",
+        "Test message",
+        "<div>Test message</div>",
+        ["attachment.png"],
+    )
+    insert_message(
+        db_connection,
+        "bob@gmail.com",
+        "Test subject",
+        "Test message",
+        "<div>Test message</div>",
+        ["attachment1.png", "attachment2.png"],
+    )
+
+    messages = get_all_messages_for_delta(db_connection, datetime.today() + timedelta(days=1), 2)
+    assert len(messages) == 2
+    first = messages[0]
+    second = messages[1]
+    assert len(first["attachments"]) == 1
+    assert first["attachments"][0]["id"] is not None
+    assert first["attachments"][0]["file_path"] == "attachment.png"
+    assert len(second["attachments"]) == 2
+    assert second["attachments"][0]["id"] is not None
+    assert second["attachments"][0]["file_path"] == "attachment1.png"
+    assert second["attachments"][1]["id"] is not None
+    assert second["attachments"][1]["file_path"] == "attachment2.png"
+
+
+

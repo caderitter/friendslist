@@ -115,16 +115,16 @@ def get_all_messages_for_delta(conn, datetime, delta_days):
         JOIN friends f ON m.friend_id = f.id
         LEFT JOIN attachments a ON m.id = a.message_id
         WHERE m.received_at BETWEEN ? AND ?
-        ORDER BY m.received_at DESC
         GROUP BY m.id
+        ORDER BY m.received_at DESC
     """,
         (datetime - timedelta(days=delta_days), datetime),
     )
 
-    messages = cur.fetchall()
+    messages = [dict(row) for row in cur.fetchall()]
     # convert the json_group_array string into an array of { file_path: 'path', id: 'id' }
     for message in messages:
-        attachments = message.get("attachments")
+        attachments = message["attachments"]
         message["attachments"] = [
             a for a in json.loads(attachments) if a["id"] is not None
         ]
