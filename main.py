@@ -7,12 +7,13 @@ from calendar_helpers import get_events
 from config import config
 from email_helpers import parse_message_and_save_attachments, send_email
 from db import (
-    get_all_addresses,
+    get_addresses_dict,
     get_all_messages_for_delta,
     get_db_connection,
     init_db,
     insert_message,
 )
+from generate_calendar import build_two_week_calendar
 from html_helpers import render_email_body
 from start_date import StartDate
 
@@ -24,7 +25,7 @@ DB_PATH = config["server"]["db_path"]
 FRIENDS_CSV_PATH = config["server"]["friends_csv_path"]
 
 
-def handle_new_message(raw_email_bytes):
+def handle_new_message(raw_email_bytes: bytes):
     parsed = parse_message_and_save_attachments(raw_email_bytes)
     from_address = parsed["from"]
     subject = parsed["subject"]
@@ -49,21 +50,27 @@ def handle_new_message(raw_email_bytes):
         logger.error("Error inserting message: %s", e)
 
 
-def handle_time_delta_elapsed(start_date):
-    logger.info("%d days have passed since the start date", DELTA_DAYS)
+def handle_time_delta_elapsed(start_date: StartDate):
+    logger.info(
+        "%d days have passed since the start date. Sending email...", DELTA_DAYS
+    )
     with get_db_connection(DB_PATH) as conn:
-        events = get_events()
         messages = get_all_messages_for_delta(conn, start_date.date, DELTA_DAYS)
         # create array of tuples of (file id, file path) from all the messages
         attachments = [
             (attachment["id"], attachment["file_path"])
             for message in messages
-            for attachment in message.attachments
+            for attachment in message["attachments"]
         ]
-        addresses = get_all_addresses(conn)
+        addresses_dict = get_addresses_dict(conn)
+        events = get_events(addresses_dict)
 
-        main_html = render_email_body(date=datetime.today(), messages=messages)
-        send_email(addresses, "Subject", main_html, attachments)
+        calendar_html = build_two_week_calendar(start_date.date.date(), events)
+        today = datetime.today()
+        main_html = render_email_body(today, messages, calendar_html)
+        subject = f"Glizzy Friendsletter: {today.strftime('%Y-%m-%d')}"
+        # send_email(list(addresses_dict.keys()), subject, main_html, attachments)
+        send_email(["ritter.cade@gmail.com"], subject, main_html, attachments)
         start_date.advance_date(conn)
 
 

@@ -1,12 +1,11 @@
 <div style="text-align: left">
   {% for message in messages %}
-    <h3>{{ message["received_at"].strftime('%Y-%m-%d')}} - {{ message["name"] }}</h3>
-    <h4>{{ message["subject"] }}</h4>
-    <p>{{ message["body_plain"] }}</p>
-    {% for attachment in message["attachments"] %}
-      <img src="cid:{{ attachment['id'] }}" />
-    {% endfor %}
-    <br />
+  <h3>{{ message["received_at"].strftime('%A, %B %e')}} - {{ message["name"] }}</h3>
+  <h4>{{ message["subject"] }}</h4>
+  <p>{{ message["body_plain"] }}</p>
+  {% for attachment in message["attachments"] %}
+  <img src="cid:{{ attachment['id'] }}" width="300" />
+  {% endfor %}
+  <br />
   {% endfor %}
 </div>
-

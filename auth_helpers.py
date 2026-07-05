@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 SCOPES = [config["email"]["scope"], config["calendar"]["scope"]]
 
 
-def get_credentials():
+def get_credentials() -> Credentials:
     logger.debug("Getting credentials for email access...")
     creds = None
     if os.path.exists("token.json"):

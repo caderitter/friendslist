@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Glizzy Friendsletter: {{ date.strftime('%Y-%m-%d') }}</title>
+  <title>Glizzy Friendsletter: {{ date.strftime('%B %e, %Y') }}</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -15,12 +15,104 @@
       background-color: #f2f4f6;
       color: #000000;
     }
+
+    .calendar-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .calendar-title {
+      padding: 20px 24px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+      border-bottom: 1px solid #eaeaea;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th {
+      background: #fafafa;
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 0;
+      border-bottom: 1px solid #eaeaea;
+    }
+
+    td.day-cell {
+      vertical-align: top;
+      height: 130px;
+      border: 1px solid #eaeaea;
+      padding: 6px;
+      width: 14.28%;
+    }
+
+    .day-number {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    td.other-month .day-number {
+      color: #c4c8ce;
+    }
+
+    td.today {
+      background: #eef4ff;
+    }
+
+    td.today .day-number {
+      display: inline-block;
+      background: #4a6fa5;
+      color: #fff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      text-align: center;
+    }
+
+    .event {
+      font-size: 11px;
+      color: #1f2937;
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-bottom: 3px;
+    }
+
+    .event-all-day {
+      color: #fff;
+      border-left: none;
+    }
+
+    .event-time {
+      color: #6b7280;
+      font-weight: 400;
+    }
+
+    .event-all-day .event-time {
+      color: rgba(255, 255, 255, 0.85);
+    }
+  </style>
   </style>
 </head>
 
 <body>
   <div>
-    <h1 style="text-align: center">Glizzy Friendsletter: {{ date.strftime('%Y-%m-%d') }}</h1>
+    <h1 style="text-align: center">Glizzy Friendsletter: {{ date.strftime('%B %e') }}</h1>
+    {{ calendar_html | safe }}
     {% include "messages.html.jinja" %}
   </div>
 </body>

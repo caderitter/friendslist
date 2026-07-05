@@ -86,9 +86,11 @@ def parse_message_and_save_attachments(raw_email_bytes):
     }
 
 
-def send_email(to_addresses, subject, body_html, attachments=None):
+def send_email(
+    to_addresses: list[str], subject: str, body_html: str, attachments: tuple[str, str]
+):
     creds = get_credentials()
-    msg = MIMEMultipart("mixed")
+    msg = MIMEMultipart("related")
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = ", ".join(to_addresses)
     msg["Subject"] = subject
@@ -97,7 +99,7 @@ def send_email(to_addresses, subject, body_html, attachments=None):
 
     msg.attach(html)
 
-    for image_id, path in (attachments or []):
+    for image_id, path in attachments:
         with open(path, "rb") as f:
             img_data = f.read()
             img = MIMEImage(img_data)

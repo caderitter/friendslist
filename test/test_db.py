@@ -70,6 +70,7 @@ def test_get_all_messages_for_delta(db_connection):
     assert messages[0]["subject"] == "Test subject"
     assert messages[0]["body_plain"] == "Test message"
 
+
 def test_get_all_messages_with_attachments(db_connection):
     insert_message(
         db_connection,
@@ -88,7 +89,9 @@ def test_get_all_messages_with_attachments(db_connection):
         ["attachment1.png", "attachment2.png"],
     )
 
-    messages = get_all_messages_for_delta(db_connection, datetime.today() + timedelta(days=1), 2)
+    messages = get_all_messages_for_delta(
+        db_connection, datetime.today() + timedelta(days=1), 2
+    )
     assert len(messages) == 2
     first = messages[0]
     second = messages[1]
@@ -100,6 +103,3 @@ def test_get_all_messages_with_attachments(db_connection):
     assert second["attachments"][0]["file_path"] == "attachment1.png"
     assert second["attachments"][1]["id"] is not None
     assert second["attachments"][1]["file_path"] == "attachment2.png"
-
-
-

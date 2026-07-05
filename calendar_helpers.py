@@ -10,7 +10,7 @@ from config import config
 logger = logging.getLogger(__name__)
 
 
-def get_events():
+def get_events(addresses_dict: dict[str, str]) -> list[dict]:
     creds = get_credentials()
     try:
         service = build("calendar", "v3", credentials=creds)
@@ -30,15 +30,29 @@ def get_events():
             )
             .execute()
         )
-        return [
-            {
+
+        def process_item(item):
+            start_date = datetime.datetime.fromisoformat(
+                item.get("start", {}).get("dateTime")
+                or item.get("start", {}).get("date")
+            )
+            end_date = datetime.datetime.fromisoformat(
+                item.get("end", {}).get("dateTime") or item.get("end", {}).get("date")
+            )
+            # if it's only a date (no time), return just the date part.
+            if item.get("start", {}).get("date"):
+                start_date = start_date.date()
+            if item.get("end", {}).get("date"):
+                end_date = end_date.date()
+            return {
                 "title": item["summary"],
-                "creator": item["creator"]["email"],
-                "start_date": item["start"]["date"],
-                "end_date": item["end"]["date"],
+                "creator": addresses_dict.get(item["creator"]["email"]),
+                "start_date": start_date,
+                "end_date": end_date,
             }
-            for item in events_result.get("items", [])
-        ]
+
+        items = events_result.get("items", [])
+        return list(map(process_item, items))
     except HttpError as error:
         logger.error("An error occurred: %s", error)
         return []

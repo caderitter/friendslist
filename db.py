@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, date
 import csv
 import json
 import logging
@@ -14,7 +14,7 @@ def get_db_connection(db_name):
     return conn
 
 
-def init_db(conn, friends_csv_path):
+def init_db(conn: sqlite3.Connection, friends_csv_path: str):
     """
     Create the database and tables if they don't exist, and populate
     the friends table from a CSV file.
@@ -68,7 +68,14 @@ def init_db(conn, friends_csv_path):
     conn.commit()
 
 
-def insert_message(conn, email, subject, body_plain, body_html, attachment_paths):
+def insert_message(
+    conn: sqlite3.Connection,
+    email: str,
+    subject: str,
+    body_plain: str,
+    body_html: str,
+    attachment_paths: list[str],
+):
     """
     Insert a new message into the database.
     """
@@ -94,7 +101,9 @@ def insert_message(conn, email, subject, body_plain, body_html, attachment_paths
     conn.commit()
 
 
-def get_all_messages_for_delta(conn, datetime, delta_days):
+def get_all_messages_for_delta(
+    conn: sqlite3.Connection, datetime: datetime, delta_days: int
+):
     """
     Retrieve all messages received between the given date and given date minus delta_days.
     """
@@ -131,7 +140,7 @@ def get_all_messages_for_delta(conn, datetime, delta_days):
     return messages
 
 
-def get_start_date(conn):
+def get_start_date(conn: sqlite3.Connection):
     """
     Retrieve the start date from the database.
     """
@@ -144,7 +153,7 @@ def get_start_date(conn):
         return None
 
 
-def update_start_date(conn, new_date):
+def update_start_date(conn: sqlite3.Connection, new_date: date):
     """
     Update the start date in the database.
     """
@@ -154,8 +163,8 @@ def update_start_date(conn, new_date):
     conn.commit()
 
 
-def get_all_addresses(conn):
+def get_addresses_dict(conn: sqlite3.Connection) -> dict[str, str]:
     cur = conn.cursor()
-    cur.execute("SELECT email FROM friends")
+    cur.execute("SELECT email, name FROM friends")
     rows = cur.fetchall()
-    return [row["email"] for row in rows]
+    return {email: name for email, name in rows}
