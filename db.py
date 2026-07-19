@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 import csv
 import json
 import logging
@@ -8,8 +8,15 @@ import sqlite3
 logger = logging.getLogger(__name__)
 
 
+def to_utc(dt: datetime) -> datetime:
+    """Convert aware or local-naive datetimes to naive UTC for SQLite storage/queries."""
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def get_db_connection(db_name):
-    conn = sqlite3.connect(db_name, detect_types=sqlite3.PARSE_DECLTYPES)
+    conn = sqlite3.connect(
+        db_name, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+    )
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -70,6 +77,7 @@ def init_db(conn: sqlite3.Connection, friends_csv_path: str):
 
 def insert_message(
     conn: sqlite3.Connection,
+    received_at: datetime,
     email: str,
     subject: str,
     body_plain: str,
@@ -87,9 +95,11 @@ def insert_message(
         raise ValueError(f"No friend found with email: {email}")
 
     friend_id = friend_row[0]
+    # Naive UTC — SQLite's datetime() returns NULL for values with %z offsets.
+    timestamp = to_utc(received_at).strftime("%Y-%m-%d %H:%M:%S")
     cur.execute(
-        "INSERT INTO messages (friend_id, subject, body_plain, body_html) VALUES (?, ?, ?, ?)",
-        (friend_id, subject, body_plain, body_html),
+        "INSERT INTO messages (friend_id, received_at, subject, body_plain, body_html) VALUES (?, ?, ?, ?, ?)",
+        (friend_id, timestamp, subject, body_plain, body_html),
     )
 
     message_id = cur.lastrowid
@@ -102,11 +112,13 @@ def insert_message(
 
 
 def get_all_messages_for_delta(
-    conn: sqlite3.Connection, datetime: datetime, delta_days: int
+    conn: sqlite3.Connection, current_date: datetime, delta_days: int
 ):
     """
     Retrieve all messages received between the given date and given date minus delta_days.
     """
+    end = to_utc(current_date)
+    start = end - timedelta(days=delta_days)
     cur = conn.cursor()
     cur.execute(
         """
@@ -119,15 +131,15 @@ def get_all_messages_for_delta(
             m.subject, 
             m.body_plain, 
             m.body_html, 
-            m.received_at
+            datetime(m.received_at, 'localtime') as 'received_at [timestamp]'
         FROM messages m
         JOIN friends f ON m.friend_id = f.id
         LEFT JOIN attachments a ON m.id = a.message_id
-        WHERE m.received_at BETWEEN ? AND ?
+        WHERE datetime(received_at) BETWEEN datetime(?) AND datetime(?)
         GROUP BY m.id
         ORDER BY m.received_at DESC
     """,
-        (datetime - timedelta(days=delta_days), datetime),
+        (start, end),
     )
 
     messages = [dict(row) for row in cur.fetchall()]

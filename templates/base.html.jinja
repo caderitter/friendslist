@@ -106,13 +106,12 @@
       color: rgba(255, 255, 255, 0.85);
     }
   </style>
-  </style>
 </head>
 
 <body>
   <div>
     <h1 style="text-align: center">Glizzy Friendsletter: {{ date.strftime('%B %e') }}</h1>
-    {{ calendar_html | safe }}
+    {% include "calendar.html.jinja" %}
     <a href="{{ calendar_url }}"><i>Don't forget to update the calendar!</i></a>
     {% include "messages.html.jinja" %}
   </div>

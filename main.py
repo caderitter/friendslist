@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+from pprint import pformat
 
 from imapclient.imapclient import IMAPClient
 from auth_helpers import get_credentials
@@ -13,7 +14,7 @@ from db import (
     init_db,
     insert_message,
 )
-from generate_calendar import build_two_week_calendar
+from generate_calendar import build_calendar_props
 from html_helpers import render_email_body
 from start_date import StartDate
 
@@ -27,23 +28,18 @@ FRIENDS_CSV_PATH = config["server"]["friends_csv_path"]
 
 def handle_new_message(raw_email_bytes: bytes):
     parsed = parse_message_and_save_attachments(raw_email_bytes)
-    from_address = parsed["from"]
-    subject = parsed["subject"]
-    body_plain = parsed["body_plain"]
-    body_html = parsed["body_html"]
-    attachment_paths = parsed["attachments"]
-
-    logger.info("New email received:")
-    logger.info("From: %s", from_address)
-    logger.info("Subject: %s", subject)
-    logger.info("Body (plain text):\n%s", body_plain)
-    logger.info("Body (HTML):\n%s", body_html)
-    logger.info("Attachments: %s", attachment_paths)
+    logger.info("New email received: %s", pformat(parsed))
 
     try:
         with get_db_connection(DB_PATH) as conn:
             insert_message(
-                conn, from_address, subject, body_plain, body_html, attachment_paths
+                conn=conn,
+                received_at=parsed["date"],
+                email=parsed["from"],
+                subject=parsed["subject"],
+                body_plain=parsed["body_plain"],
+                body_html=parsed["body_html"],
+                attachment_paths=parsed["attachments"],
             )
             logger.info("Message inserted into the database successfully.")
     except ValueError as e:
@@ -55,7 +51,8 @@ def handle_time_delta_elapsed(start_date: StartDate):
         "%d days have passed since the start date. Sending email...", DELTA_DAYS
     )
     with get_db_connection(DB_PATH) as conn:
-        messages = get_all_messages_for_delta(conn, start_date.date, DELTA_DAYS)
+        today = datetime.today()
+        messages = get_all_messages_for_delta(conn, today, DELTA_DAYS)
         # create array of tuples of (file id, file path) from all the messages
         attachments = [
             (attachment["id"], attachment["file_path"])
@@ -64,13 +61,19 @@ def handle_time_delta_elapsed(start_date: StartDate):
         ]
         addresses_dict = get_addresses_dict(conn)
         events = get_events(addresses_dict)
-
-        calendar_html = build_two_week_calendar(start_date.date.date(), events)
-        today = datetime.today()
-        main_html = render_email_body(today, messages, calendar_html)
+        cal_title_range, cal_weeks = build_calendar_props(
+            start_date.date.date(), events
+        )
+        main_html = render_email_body(
+            date=today,
+            messages=messages,
+            cal_title_range=cal_title_range,
+            cal_weeks=cal_weeks,
+        )
         subject = f"Glizzy Friendsletter: {today.strftime('%B %e')}"
-        send_email(list(addresses_dict.keys()), subject, main_html, attachments)
-        start_date.advance_date(conn)
+        # send_email(list(addresses_dict.keys()), subject, main_html, attachments)
+        send_email(["ritter.cade@gmail.com"], subject, main_html, attachments)
+        # start_date.advance_date(conn)
 
 
 def main():

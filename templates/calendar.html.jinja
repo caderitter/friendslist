@@ -1,0 +1,26 @@
+<div class="calendar-wrapper">
+  <div class="calendar-title">{{ title_range }}</div>
+  <table>
+    <thead>
+      <tr>
+        {% for label in ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] %}<th>{{ label }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in weeks %}
+      <tr>
+        {% for day in week %}
+        <td class="day-cell{% if day.is_today %} today{% endif %}{% if day.is_other_month %} other-month{% endif %}">
+          <div class="day-number">{{ day.day_number }}</div>
+          <div class="events">
+            {% for ev in day.events %}
+            <div class="event{% if ev.all_day %} event-all-day{% endif %}" style="{{ ev.style }}">{{ ev.label }}</div>
+            {% endfor %}
+          </div>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

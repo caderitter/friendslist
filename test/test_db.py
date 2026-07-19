@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -8,6 +8,7 @@ from db import get_all_messages_for_delta, insert_message
 def test_insert_message(db_connection):
     insert_message(
         db_connection,
+        datetime.today(),
         "alice@gmail.com",
         "Test subject",
         "Test message",
@@ -38,6 +39,7 @@ def test_insert_message_with_stranger_email_raises(db_connection):
     with pytest.raises(ValueError, match="No friend found with email: eve@gmail.com"):
         insert_message(
             db_connection,
+            datetime.today(),
             "eve@gmail.com",
             "Test subject",
             "Test message",
@@ -71,9 +73,33 @@ def test_get_all_messages_for_delta(db_connection):
     assert messages[0]["body_plain"] == "Test message"
 
 
+def test_insert_timezone_aware_received_at_is_queryable(db_connection):
+    aware = datetime(2026, 7, 18, 19, 20, 19, tzinfo=timezone(timedelta(hours=-4)))
+    insert_message(
+        db_connection,
+        aware,
+        "alice@gmail.com",
+        "Aware subject",
+        "body",
+        "<div>body</div>",
+        [],
+    )
+
+    cursor = db_connection.cursor()
+    stored = cursor.execute(
+        "SELECT received_at FROM messages"
+    ).fetchone()[0]
+    assert stored == datetime(2026, 7, 18, 23, 20, 19)  # UTC, no offset suffix
+
+    messages = get_all_messages_for_delta(db_connection, datetime(2026, 7, 19), 14)
+    assert len(messages) == 1
+    assert messages[0]["subject"] == "Aware subject"
+
+
 def test_get_all_messages_with_attachments(db_connection):
     insert_message(
         db_connection,
+        datetime.today(),
         "alice@gmail.com",
         "Test subject",
         "Test message",
@@ -82,6 +108,7 @@ def test_get_all_messages_with_attachments(db_connection):
     )
     insert_message(
         db_connection,
+        datetime.today(),
         "bob@gmail.com",
         "Test subject",
         "Test message",

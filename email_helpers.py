@@ -8,7 +8,7 @@ from email.header import decode_header, make_header
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import parseaddr
+from email.utils import parseaddr, parsedate_to_datetime
 
 from PIL import Image
 
@@ -43,18 +43,19 @@ def extract_attachment(part, content_type, content_disposition):
         return None
     img = Image.open(io.BytesIO(payload))
     rgb_img = img.convert("RGB")
-    rgb_img.save(filepath, format="JPEG", quality=60)
+    rgb_img.save(filepath, format="JPEG", quality=30)
     logger.info("Saved attachment: %s", filepath)
     return filepath
 
 
 def parse_message_and_save_attachments(raw_email_bytes):
     logger.debug("Parsing email...")
-    msg = email.message_from_bytes(raw_email_bytes)
+    msg = email.message_from_bytes(raw_email_bytes, policy=email.policy.default)
 
     subject = msg["Subject"]
     raw_from = msg["From"]
     _, sender_address = parseaddr(raw_from)
+    date = parsedate_to_datetime(msg["date"])
 
     body_plain = ""
     body_html = ""
@@ -83,6 +84,7 @@ def parse_message_and_save_attachments(raw_email_bytes):
         "body_plain": body_plain,
         "body_html": body_html,
         "attachments": saved_paths,
+        "date": date,
     }
 
 
