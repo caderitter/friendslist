@@ -103,6 +103,10 @@ def main():
                     server.idle()
                 if start_date.delta_has_elapsed():
                     handle_time_delta_elapsed(start_date)
+            except KeyboardInterrupt:
+                logger.info("Exiting...")
+                server.idle_done()
+                break
             except Exception as e:
                 logger.error("Error: %s", e)
 
