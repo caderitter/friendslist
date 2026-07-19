@@ -1,8 +1,11 @@
+from pathlib import Path
+
 from jinja2 import Environment, FileSystemLoader
 
-from config import config
+from friendslist.config import config
 
-env = Environment(loader=FileSystemLoader("templates"))
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
 template = env.get_template("base.html.jinja")
 CALENDAR_URL = config["calendar"]["url"]
 

@@ -5,8 +5,8 @@ import logging
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from auth_helpers import get_credentials
-from config import config
+from friendslist.auth_helpers import get_credentials
+from friendslist.config import config
 
 logger = logging.getLogger(__name__)
 

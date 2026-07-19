@@ -1,13 +1,15 @@
 import calendar
-from datetime import date, datetime, time, timedelta
 from collections import defaultdict
+from datetime import date, datetime, time, timedelta
+from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup, escape
 
 DEFAULT_EVENT_COLOR = "#4a6fa5"
 
-env = Environment(loader=FileSystemLoader("templates"))
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
 template = env.get_template("calendar.html.jinja")
 
 

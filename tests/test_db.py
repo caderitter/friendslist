@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from db import get_all_messages_for_delta, insert_message
+from friendslist.db import get_all_messages_for_delta, insert_message
 
 
 def test_insert_message(db_connection):

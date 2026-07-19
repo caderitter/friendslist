@@ -12,8 +12,8 @@ from email.utils import parseaddr, parsedate_to_datetime
 
 from PIL import Image
 
-from auth_helpers import get_credentials
-from config import config
+from friendslist.auth_helpers import get_credentials
+from friendslist.config import config
 
 logger = logging.getLogger(__name__)
 EMAIL_ADDRESS = config["email"]["address"]

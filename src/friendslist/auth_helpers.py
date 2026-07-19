@@ -5,7 +5,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from config import config
+from friendslist.config import config
 
 logger = logging.getLogger(__name__)
 SCOPES = [config["email"]["scope"], config["calendar"]["scope"]]

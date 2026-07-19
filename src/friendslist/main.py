@@ -3,20 +3,21 @@ import logging
 from pprint import pformat
 
 from imapclient.imapclient import IMAPClient
-from auth_helpers import get_credentials
-from calendar_helpers import get_events
-from config import config
-from email_helpers import parse_message_and_save_attachments, send_email
-from db import (
+
+from friendslist.auth_helpers import get_credentials
+from friendslist.calendar_helpers import get_events
+from friendslist.config import config
+from friendslist.db import (
     get_addresses_dict,
     get_all_messages_for_delta,
     get_db_connection,
     init_db,
     insert_message,
 )
-from generate_calendar import build_calendar_props
-from html_helpers import render_email_body
-from start_date import StartDate
+from friendslist.email_helpers import parse_message_and_save_attachments, send_email
+from friendslist.generate_calendar import build_calendar_props
+from friendslist.html_helpers import render_email_body
+from friendslist.start_date import StartDate
 
 logger = logging.getLogger(__name__)
 IMAP_SERVER = config["email"]["imap_server"]
@@ -105,6 +106,3 @@ def main():
             except Exception as e:
                 logger.error("Error: %s", e)
 
-
-if __name__ == "__main__":
-    main()
